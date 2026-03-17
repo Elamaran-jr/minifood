@@ -17,4 +17,12 @@ export class GetFoodItemsFilterDto {
   @IsOptional()
   @Type(() => Number)
   maxPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number = 10;
 }

@@ -59,20 +59,38 @@ export class OrdersService {
     });
   }
 
-  async findMyOrders(userId: string) {
-    return this.prisma.order.findMany({
-      where: { userId },
+  async findMyOrders(userId: string, page: number = 1, limit: number = 10) {
+    const where = { userId };
+    const totalItems = await this.prisma.order.count({ where });
+    
+    const items = await this.prisma.order.findMany({
+      where,
       include: {
         orderItems: {
           include: { food: true }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      items,
+      meta: {
+        totalItems,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      }
+    };
   }
 
-  async findAll() {
-    return this.prisma.order.findMany({
+  async findAll(page: number = 1, limit: number = 10) {
+    const totalItems = await this.prisma.order.count();
+    
+    const items = await this.prisma.order.findMany({
       include: {
         orderItems: {
           include: { food: true }
@@ -80,7 +98,20 @@ export class OrdersService {
         user: { select: { id: true, email: true } }
       },
       orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      items,
+      meta: {
+        totalItems,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      }
+    };
   }
 
   async getRevenue(period: 'day' | 'month' | 'year') {

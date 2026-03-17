@@ -27,14 +27,21 @@ export class OrdersController {
 
   @Get('my-orders')
   @Roles(Role.USER, Role.ADMIN)
-  findMyOrders(@CurrentUser() user: any) {
-    return this.ordersService.findMyOrders(user.userId);
+  findMyOrders(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    return this.ordersService.findMyOrders(user.userId, parseInt(page), parseInt(limit));
   }
 
   @Get()
   @Roles(Role.ADMIN) // Admin can view all orders
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    return this.ordersService.findAll(parseInt(page), parseInt(limit));
   }
 
   @Delete(':id')

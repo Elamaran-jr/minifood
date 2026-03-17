@@ -8,7 +8,6 @@ import Menu from './pages/Menu.jsx'
 import Cart from './pages/Cart.jsx'
 import Orders from './pages/Orders.jsx'
 import AddItem from './pages/AddItem.jsx'
-import Profile from './pages/Profile.jsx'
 import Revenue from './pages/Revenue.jsx'
 
 const API_URL = 'http://localhost:3000';
@@ -26,22 +25,7 @@ const ProtectedRoute = () => {
 const DashboardLayout = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
-  const [username, setUsername] = useState('');
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${API_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUsername(res.data.username || res.data.email.split('@')[0]);
-      } catch (err) {
-        console.error('Failed to fetch profile in navbar', err);
-      }
-    };
-    fetchProfile();
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -59,15 +43,7 @@ const DashboardLayout = () => {
             <span>suvai</span>
           </div>
           
-          <div className="profile-mini-card" onClick={() => navigate('/profile')}>
-            <div className="profile-avatar">
-              {username?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="profile-details">
-              <span className="profile-name">{username || 'Guest'}</span>
-              <span className={`role-tag ${role?.toLowerCase()}`}>{role}</span>
-            </div>
-          </div>
+
         </div>
 
         <div className="nav-links">
@@ -84,9 +60,6 @@ const DashboardLayout = () => {
           
           {role === 'ADMIN' && (
             <>
-              <button className="nav-btn flex" onClick={() => navigate('/add-item')}>
-                <PlusCircle size={18} /> Add Item
-              </button>
               <button className="nav-btn flex" onClick={() => navigate('/revenue')}>
                 <BarChart3 size={18} /> Revenue
               </button>
@@ -121,7 +94,7 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/add-item" element={<AddItem />} />
           <Route path="/revenue" element={<Revenue />} />
-          <Route path="/profile" element={<Profile />} />
+
           <Route path="/admin" element={<Navigate to="/orders" replace />} />
         </Route>
       </Route>

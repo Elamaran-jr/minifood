@@ -18,10 +18,4 @@ export class AuthController {
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  getProfile(@CurrentUser() user: any) {
-    return this.authService.getProfile(user.sub);
-  }
 }

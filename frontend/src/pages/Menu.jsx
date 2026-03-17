@@ -1,29 +1,35 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Minus, Trash2, Edit, ShoppingCart } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, Edit, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = 'http://localhost:3000';
 
 export default function Menu() {
   const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState({});  // { itemId: qty }
   const [addedMsg, setAddedMsg] = useState('');
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  const fetchItems = async () => {
+  const fetchItems = async (p = 1, search = '') => {
+    setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/food-items`, {
+      const res = await axios.get(`${API_URL}/food-items?page=${p}&limit=9&search=${search}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setItems(res.data);
-      // Initialize quantities to 1 for each item
+      setItems(res.data.items);
+      setMeta(res.data.meta);
+      setPage(res.data.meta.currentPage);
+      
       const initQty = {};
-      res.data.forEach(item => { initQty[item.id] = 1; });
+      res.data.items.forEach(item => { initQty[item.id] = 1; });
       setQuantities(initQty);
     } catch (err) {
       console.error(err);
@@ -32,9 +38,19 @@ export default function Menu() {
     }
   };
 
+  // Initial fetch and handle page changes
   useEffect(() => {
-    fetchItems();
-  }, []);
+    fetchItems(page, searchTerm);
+  }, [page]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchItems(1, searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const updateQty = (itemId, delta) => {
     setQuantities(prev => {
@@ -54,11 +70,8 @@ export default function Menu() {
         );
       }
       
-      // Show brief confirmation
       setAddedMsg(`${qty}x ${item.name} added to cart!`);
       setTimeout(() => setAddedMsg(''), 2000);
-      
-      // Reset quantity for this item
       setQuantities(prev => ({ ...prev, [item.id]: 1 }));
     } catch (err) {
       alert(err.response?.data?.message || 'Error adding to cart');
@@ -71,18 +84,34 @@ export default function Menu() {
       await axios.delete(`${API_URL}/food-items/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchItems();
+      fetchItems(page, searchTerm);
     } catch (err) {
       alert('Error deleting item');
     }
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading menu...</div>;
+  if (loading && items.length === 0 && !searchTerm) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading menu...</div>;
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Menu</h2>
+    <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
+        <div>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Menu</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Explore our delicious South Indian cuisines</p>
+        </div>
+
+        <div style={{ flex: 1, minWidth: '300px', maxWidth: '500px', position: 'relative' }}>
+          <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input 
+            type="text" 
+            placeholder="Search for dishes..." 
+            className="form-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ paddingLeft: '3rem', borderRadius: 'var(--radius-full)', background: 'white', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
+          />
+        </div>
+
         {role === 'ADMIN' && (
           <button className="btn-primary" onClick={() => navigate('/add-item')}>
             <Plus size={18} /> Add Food Item
@@ -90,109 +119,169 @@ export default function Menu() {
         )}
       </div>
 
-      {/* Cart confirmation toast */}
       {addedMsg && (
         <div style={{
           position: 'fixed', top: '80px', right: '2rem', zIndex: 999,
-          background: 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
-          borderRadius: 'var(--radius)', fontWeight: 600, boxShadow: 'var(--shadow)',
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          background: 'var(--success)', color: 'white', padding: '1rem 2rem',
+          borderRadius: 'var(--radius)', fontWeight: 700, boxShadow: 'var(--shadow-lg)',
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
           animation: 'fadeIn 0.3s ease'
         }}>
-          <ShoppingCart size={18} /> {addedMsg}
+          <ShoppingCart size={20} /> {addedMsg}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        {items.map(item => (
-          <div key={item.id} className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {item.imageUrl && (
-              <div style={{ height: '180px', width: '100%', marginBottom: '1rem' }}>
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{item.name}</h3>
-              <span style={{ fontWeight: 600, color: 'var(--primary)' }}>${item.price.toFixed(2)}</span>
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem', flex: 1 }}>{item.description}</p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: '#e2e8f0', borderRadius: '4px' }}>
-                {item.category}
-              </span>
-            </div>
-            
-            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {role === 'USER' ? (
-                <>
-                  {/* Quantity selector */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '0',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                    overflow: 'hidden'
-                  }}>
-                    <button
-                      onClick={() => updateQty(item.id, -1)}
-                      disabled={!item.available}
-                      style={{
-                        background: 'none', border: 'none', padding: '0.5rem 0.75rem',
-                        cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600,
-                        borderRight: '1px solid var(--border)'
-                      }}
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span style={{
-                      padding: '0.5rem 1rem', fontWeight: 600,
-                      minWidth: '40px', textAlign: 'center', fontSize: '0.95rem'
-                    }}>
-                      {quantities[item.id] || 1}
-                    </span>
-                    <button
-                      onClick={() => updateQty(item.id, 1)}
-                      disabled={!item.available}
-                      style={{
-                        background: 'none', border: 'none', padding: '0.5rem 0.75rem',
-                        cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600,
-                        borderLeft: '1px solid var(--border)'
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                  
-                  {/* Add to cart button */}
-                  <button 
-                    className="btn-primary" 
-                    style={{ flex: 1 }} 
-                    onClick={() => addToCart(item)}
-                    disabled={!item.available}
-                  >
-                    <ShoppingCart size={16} />
-                    {item.available ? `Add ${quantities[item.id] > 1 ? `(${quantities[item.id]})` : ''}` : 'Unavailable'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="btn-primary" style={{ flex: 1, background: 'var(--success)' }} onClick={() => navigate(`/add-item?edit=${item.id}`)}>
-                    <Edit size={16} /> Edit
-                  </button>
-                  <button className="btn-primary" style={{ background: 'var(--danger)' }} onClick={() => deleteItem(item.id)}>
-                    <Trash2 size={16} />
-                  </button>
-                </>
+      {items.length === 0 && !loading ? (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
+          <Search size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+          <h3>No dishes found matching "{searchTerm}"</h3>
+          <p>Try searching for something else or clear the filter.</p>
+          <button 
+            className="link-btn" 
+            onClick={() => setSearchTerm('')}
+            style={{ marginTop: '1rem', margin: '1rem auto' }}
+          >
+            Clear Search
+          </button>
+        </div>
+      ) : (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(3, 1fr)', 
+          gap: '2.5rem',
+          marginBottom: '4rem'
+        }}>
+          {items.map(item => (
+            <div key={item.id} className="food-card" style={{ height: '100%', opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+              {item.imageUrl && (
+                <div className="food-img-container">
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.name} 
+                    className="food-image"
+                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                  />
+                  <span className="category-badge">{item.category}</span>
+                </div>
               )}
+              <div className="food-content">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                  <h3 className="food-title">{item.name}</h3>
+                  <span className="food-price">${item.price.toFixed(2)}</span>
+                </div>
+                <p className="food-desc">{item.description}</p>
+                
+                <div style={{ marginTop: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  {role === 'USER' ? (
+                    <>
+                      <div className="qty-control">
+                        <button
+                          className="qty-btn"
+                          onClick={() => updateQty(item.id, -1)}
+                          disabled={!item.available}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="qty-value">{quantities[item.id] || 1}</span>
+                        <button
+                          className="qty-btn"
+                          onClick={() => updateQty(item.id, 1)}
+                          disabled={!item.available}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      
+                      <button 
+                        className="btn-primary" 
+                        style={{ flex: 1, padding: '0.6rem 1.25rem', fontSize: '0.95rem' }} 
+                        onClick={() => addToCart(item)}
+                        disabled={!item.available}
+                      >
+                        <ShoppingCart size={16} />
+                        {item.available ? 'Add' : 'Sold Out'}
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                      <button className="btn-primary" style={{ flex: 1, background: 'var(--success)', padding: '0.6rem' }} onClick={() => navigate(`/add-item?edit=${item.id}`)}>
+                        <Edit size={16} /> Edit
+                      </button>
+                      <button className="btn-logout" style={{ padding: '0.6rem', border: '1px solid var(--border)' }} onClick={() => deleteItem(item.id)}>
+                        <Trash2 size={16} color="var(--danger)" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       
-      {items.length === 0 && (
+      {meta && meta.totalPages > 1 && (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          gap: '2rem', 
+          marginTop: '2rem',
+          padding: '2rem',
+          borderTop: '1px solid var(--border)'
+        }}>
+          <button 
+            className="btn-logout" 
+            disabled={page === 1} 
+            onClick={() => {
+              setPage(p => p - 1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ 
+              opacity: page === 1 ? 0.3 : 1,
+              padding: '0.8rem 2rem',
+              borderRadius: 'var(--radius-full)',
+              boxShadow: page === 1 ? 'none' : 'var(--shadow-md)',
+              border: '1px solid var(--border)',
+              background: 'white',
+              cursor: page === 1 ? 'not-allowed' : 'pointer'
+            }}
+          >
+            &larr; Previous
+          </button>
+          
+          <div style={{ 
+            display: 'flex', 
+            gap: '0.5rem', 
+            alignItems: 'center',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            color: 'var(--text-main)'
+          }}>
+            <span style={{ color: 'var(--primary)', fontSize: '1.25rem' }}>{page}</span>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/</span>
+            <span>{meta.totalPages}</span>
+          </div>
+
+          <button 
+            className="btn-primary" 
+            disabled={page === meta.totalPages} 
+            onClick={() => {
+              setPage(p => p + 1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ 
+              opacity: page === meta.totalPages ? 0.5 : 1,
+              padding: '0.8rem 2.5rem',
+              boxShadow: page === meta.totalPages ? 'none' : 'var(--shadow-glow)',
+              cursor: page === meta.totalPages ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Next &rarr;
+          </button>
+        </div>
+      )}
+
+      {items.length === 0 && !loading && (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '3rem' }}>
           No food items found.
         </div>

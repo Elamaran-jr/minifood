@@ -31,10 +31,4 @@ export class UsersService {
       where: { id },
     });
   }
-
-  async getOrderCount(userId: string): Promise<number> {
-    return this.prisma.order.count({
-      where: { userId },
-    });
-  }
 }

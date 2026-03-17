@@ -16,7 +16,7 @@ export class FoodItemsService {
   }
 
   async findAll(filterDto: GetFoodItemsFilterDto) {
-    const { search, category, minPrice, maxPrice } = filterDto;
+    const { search, category, minPrice, maxPrice, page = 1, limit = 10 } = filterDto;
     
     const where: Prisma.FoodItemWhereInput = {};
 
@@ -36,9 +36,24 @@ export class FoodItemsService {
       if (maxPrice) where.price.lte = maxPrice;
     }
 
-    return this.prisma.foodItem.findMany({
+    const totalItems = await this.prisma.foodItem.count({ where });
+    const items = await this.prisma.foodItem.findMany({
       where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
     });
+
+    return {
+      items,
+      meta: {
+        totalItems,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+    };
   }
 
   async findOne(id: string) {

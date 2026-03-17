@@ -23,6 +23,7 @@ export class AuthService {
       email: registerDto.email,
       password: hashedPassword,
       role: registerDto.role,
+      username: registerDto.username,
     });
 
     return user;
@@ -42,24 +43,6 @@ export class AuthService {
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
-    };
-  }
-
-  async getProfile(userId: string) {
-    const user = await this.usersService.findById(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    // Get order count for stats
-    const orderCount = await this.usersService.getOrderCount(userId);
-
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-      orderCount,
     };
   }
 }
