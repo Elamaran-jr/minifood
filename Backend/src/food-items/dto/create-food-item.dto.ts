@@ -13,9 +13,9 @@ export class CreateFoodItemDto {
   @IsNotEmpty()
   price: number;
 
-  @IsString()
-  @IsNotEmpty()
-  category: string;
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  categoryIds: string[];
 
   @IsBoolean()
   @IsOptional()
@@ -24,4 +24,8 @@ export class CreateFoodItemDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @IsNumber()
+  @IsOptional()
+  prepTime?: number;
 }

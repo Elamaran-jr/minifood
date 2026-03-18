@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
+import { useCart } from '../context/CartContext.jsx';
 
 const API_URL = 'http://localhost:3000';
 
@@ -9,8 +10,10 @@ export default function Cart() {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const { fetchCartCount, resetCartCount } = useCart();
 
   const fetchCart = async () => {
     try {
@@ -30,6 +33,11 @@ export default function Cart() {
     // remove any stale local storage cart
     localStorage.removeItem('cart');
   }, []);
+
+  // Sync badge count whenever cart changes
+  useEffect(() => {
+    fetchCartCount();
+  }, [cart.length, cart.reduce((acc, item) => acc + item.quantity, 0)]);
 
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -89,9 +97,14 @@ export default function Cart() {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      alert('Order placed successfully!');
       setCart([]);
-      navigate('/orders');
+      resetCartCount();
+      setShowToast(true);
+      
+      setTimeout(() => {
+        setShowToast(false);
+        navigate('/orders');
+      }, 3000);
     } catch (err) {
       alert(err.response?.data?.message || 'Error placing order');
     } finally {
@@ -103,6 +116,21 @@ export default function Cart() {
 
   return (
     <div>
+      {showToast && (
+        <div style={{
+          position: 'fixed', top: '80px', right: '2rem', zIndex: 1000,
+          background: 'var(--success)', color: 'white', padding: '1rem 2.5rem',
+          borderRadius: 'var(--radius)', fontWeight: 700, boxShadow: 'var(--shadow-lg)',
+          animation: 'fadeIn 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.75rem'
+        }}>
+          <div style={{ background: 'rgba(255,255,255,0.2)', padding: '5px', borderRadius: '50%', display: 'flex' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          Order placed and confirmed successfully!
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2>Your Cart</h2>
         {cart.length > 0 && (

@@ -104,6 +104,75 @@ export default function Revenue() {
             </div>
           </div>
 
+          {/* Top Dishes Analytics Section */}
+          <div className="card" style={{ 
+            marginBottom: '2.5rem', 
+            border: '1px solid rgba(255, 75, 43, 0.05)',
+            boxShadow: 'var(--shadow-md)',
+            borderRadius: '20px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem' }}>
+                 <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                   <TrendingUp size={20} color="var(--primary)" />
+                 </div>
+                 Most Loved Dishes
+              </h3>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px' }}>
+                Performance Insights
+              </span>
+            </div>
+            
+            {data.topDishes?.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No dish data available for this period.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                {data.topDishes?.map((dish, index) => (
+                  <div key={dish.name} style={{ 
+                    padding: '1.5rem', borderRadius: '16px', background: '#fffcf6', 
+                    border: '1px solid rgba(255, 75, 43, 0.1)', transition: 'all 0.3s ease'
+                  }} className="analytics-dish-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>{dish.name}</h4>
+                      <div style={{ 
+                        background: index === 0 ? 'var(--primary)' : 'var(--primary-light)', 
+                        color: index === 0 ? 'white' : 'var(--primary)', 
+                        padding: '4px 10px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800,
+                        boxShadow: index === 0 ? '0 4px 10px rgba(255, 75, 43, 0.2)' : 'none'
+                      }}>
+                        RANK #{index + 1}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                      <div style={{ padding: '0.75rem', background: 'white', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Sold</span>
+                        <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{dish.count} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>units</span></span>
+                      </div>
+                      <div style={{ padding: '0.75rem', background: 'white', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Contribution</span>
+                        <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--success)' }}>${dish.avgRevenue.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ 
+                          height: '100%', background: 'linear-gradient(90deg, var(--primary), var(--secondary))', 
+                          width: `${(dish.count / data.topDishes[0].count) * 100}%`,
+                          transition: 'width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }} />
+                      </div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                        {((dish.count / data.topDishes[0].count) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Orders Table */}
           <div className="card">
             <h3 style={{ marginBottom: '1.5rem' }}>

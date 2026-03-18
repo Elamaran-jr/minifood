@@ -19,8 +19,10 @@ enum Role {
 }
 
 enum OrderStatus {
-  PENDING
-  PAID
+  PLACED
+  CONFIRMED
+  PROCESSING
+  DELIVERED
   CANCELLED
 }
 
@@ -41,20 +43,28 @@ model FoodItem {
   name        String
   description String
   price       Float
-  category    String
+  categories  Category[]
   imageUrl    String?
+  prepTime    Int?        @default(15)
   available   Boolean     @default(true)
+  isDeleted   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   cartItems   CartItem[]
 }
 
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  foodItems FoodItem[]
+}
+
 model Order {
   id         String      @id @default(uuid())
   userId     String
   user       User        @relation(fields: [userId], references: [id])
-  status     OrderStatus @default(PENDING)
+  status     OrderStatus @default(PLACED)
   total      Float       @default(0.0)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

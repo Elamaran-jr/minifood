@@ -11,6 +11,10 @@ export class GetFoodItemsFilterDto {
   category?: string;
 
   @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   minPrice?: number;
 

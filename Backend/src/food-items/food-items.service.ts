@@ -10,15 +10,21 @@ export class FoodItemsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createFoodItemDto: CreateFoodItemDto) {
+    const { categoryIds, ...rest } = createFoodItemDto;
     return this.prisma.foodItem.create({
-      data: createFoodItemDto,
+      data: {
+        ...rest,
+        categories: { connect: categoryIds.map(id => ({ id })) }
+      },
     });
   }
 
   async findAll(filterDto: GetFoodItemsFilterDto) {
-    const { search, category, minPrice, maxPrice, page = 1, limit = 10 } = filterDto;
+    const { search, category, categoryId, minPrice, maxPrice, page = 1, limit = 10 } = filterDto;
     
-    const where: Prisma.FoodItemWhereInput = {};
+    const where: Prisma.FoodItemWhereInput = {
+      isDeleted: false
+    };
 
     if (search) {
       where.name = {
@@ -27,7 +33,11 @@ export class FoodItemsService {
     }
 
     if (category) {
-      where.category = category;
+      where.categories = { some: { name: category } };
+    }
+
+    if (categoryId) {
+      where.categories = { some: { id: categoryId } };
     }
 
     if (minPrice || maxPrice) {
@@ -39,6 +49,7 @@ export class FoodItemsService {
     const totalItems = await this.prisma.foodItem.count({ where });
     const items = await this.prisma.foodItem.findMany({
       where,
+      include: { categories: true },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' }
@@ -58,7 +69,8 @@ export class FoodItemsService {
 
   async findOne(id: string) {
     const foodItem = await this.prisma.foodItem.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
+      include: { categories: true },
     });
     if (!foodItem) {
       throw new NotFoundException(`Food item with ID ${id} not found`);
@@ -68,16 +80,37 @@ export class FoodItemsService {
 
   async update(id: string, updateFoodItemDto: UpdateFoodItemDto) {
     await this.findOne(id); // Ensure exists
+    const { categoryIds, ...rest } = updateFoodItemDto;
     return this.prisma.foodItem.update({
       where: { id },
-      data: updateFoodItemDto,
+      data: {
+        ...rest,
+        ...(categoryIds && { 
+          categories: { 
+            set: categoryIds.map(id => ({ id })) 
+          } 
+        })
+      },
     });
   }
 
   async remove(id: string) {
-    await this.findOne(id); // Ensure exists
-    return this.prisma.foodItem.delete({
-      where: { id },
+    const item = await this.findOne(id); // Ensure exists and not deleted
+
+    return this.prisma.$transaction(async (prisma) => {
+      // 1. Clear active carts containing this item
+      await prisma.cartItem.deleteMany({
+        where: { foodId: id },
+      });
+
+      // 2. Mark as deleted and unavailable
+      return prisma.foodItem.update({
+        where: { id },
+        data: { 
+          isDeleted: true,
+          available: false
+        },
+      });
     });
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Patch } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -48,5 +48,14 @@ export class OrdersController {
   @Roles(Role.USER) // User cancels their own order
   cancelOrder(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordersService.cancelOrder(id, user.userId);
+  }
+
+  @Patch(':id/status')
+  @Roles(Role.ADMIN) // Admin updates status
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'DELIVERED' | 'CANCELLED'
+  ) {
+    return this.ordersService.updateStatus(id, status);
   }
 }

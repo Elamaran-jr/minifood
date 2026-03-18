@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -11,12 +12,12 @@ export class OrdersService {
     
     // Verify food items and calculate total
     for (const item of createOrderDto.items) {
-      const foodItem = await this.prisma.foodItem.findUnique({
-        where: { id: item.foodId },
+      const foodItem = await this.prisma.foodItem.findFirst({
+        where: { id: item.foodId, isDeleted: false },
       });
 
       if (!foodItem) {
-        throw new NotFoundException(`Food item with ID ${item.foodId} not found`);
+        throw new NotFoundException(`Food item with ID ${item.foodId} not found or has been removed`);
       }
       if (!foodItem.available) {
         throw new BadRequestException(`Food item ${foodItem.name} is currently unavailable`);
@@ -25,17 +26,13 @@ export class OrdersService {
       total += foodItem.price * item.quantity;
     }
 
-    // Dummy payment system simulation
-    const paymentSuccessful = true; // Simulating successful payment
-    const finalStatus = paymentSuccessful ? 'PAID' : 'PENDING';
-
     // Create the order and related order items in a transaction
     return this.prisma.$transaction(async (prisma) => {
       const order = await prisma.order.create({
         data: {
           userId,
           total,
-          status: finalStatus,
+          status: 'PLACED',
           orderItems: {
             create: createOrderDto.items.map(item => ({
               foodId: item.foodId,
@@ -95,7 +92,7 @@ export class OrdersService {
         orderItems: {
           include: { food: true }
         },
-        user: { select: { id: true, email: true } }
+        user: { select: { id: true, email: true, username: true } }
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
@@ -128,12 +125,12 @@ export class OrdersService {
 
     const orders = await this.prisma.order.findMany({
       where: {
-        status: 'PAID',
+        status: 'DELIVERED',
         createdAt: { gte: startDate },
       },
       include: {
         orderItems: { include: { food: true } },
-        user: { select: { email: true } },
+        user: { select: { email: true, username: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -141,7 +138,54 @@ export class OrdersService {
     const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
     const totalOrders = orders.length;
 
-    return { period, startDate, totalRevenue, totalOrders, orders };
+    // Aggregate top dishes
+    const itemStats: Record<string, { 
+      name: string, 
+      totalQuantity: number, 
+      revenue: number, 
+      orderOccurrences: number,
+      price: number 
+    }> = {};
+    
+    orders.forEach(order => {
+      const itemsInThisOrder = new Set<string>();
+      order.orderItems.forEach(oi => {
+        if (!oi.food) return;
+        const id = oi.foodId;
+        if (!itemStats[id]) {
+          itemStats[id] = { 
+            name: oi.food.name, 
+            totalQuantity: 0, 
+            revenue: 0, 
+            orderOccurrences: 0,
+            price: oi.food.price
+          };
+        }
+        itemStats[id].totalQuantity += oi.quantity;
+        itemStats[id].revenue += oi.food.price * oi.quantity;
+        
+        if (!itemsInThisOrder.has(id)) {
+          itemStats[id].orderOccurrences += 1;
+          itemsInThisOrder.add(id);
+        }
+      });
+    });
+
+    const topDishes = Object.values(itemStats)
+      .map(stat => {
+        const avgQty = stat.orderOccurrences > 0 ? stat.totalQuantity / stat.orderOccurrences : 0;
+        return {
+          name: stat.name,
+          count: stat.totalQuantity, // Total quantity sold
+          orderCount: stat.orderOccurrences, // Number of orders containing this item
+          avgQty: avgQty,
+          avgRevenue: avgQty * stat.price
+        };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return { period, startDate, totalRevenue, totalOrders, orders, topDishes };
   }
 
   async cancelOrder(id: string, userId: string) {
@@ -153,16 +197,38 @@ export class OrdersService {
     if (order.userId !== userId) {
       throw new ForbiddenException('You can only cancel your own orders');
     }
-    if (order.status === 'CANCELLED') {
-      throw new BadRequestException('Order is already cancelled');
-    }
-    if (order.status === 'PAID') {
-      throw new BadRequestException('Cannot cancel a paid order. Please contact support.');
+    if (order.status !== 'PLACED') {
+      throw new BadRequestException('Orders can only be cancelled while in PLACED status. Once confirmed, contact support.');
     }
 
     return this.prisma.order.update({
       where: { id },
       data: { status: 'CANCELLED' },
+    });
+  }
+
+  async updateStatus(id: string, newStatus: 'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'DELIVERED' | 'CANCELLED') {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException(`Order with ID ${id} not found`);
+
+    const currentStatus = order.status as OrderStatus;
+    const transitions: Record<OrderStatus, OrderStatus[]> = {
+      PLACED: ['CONFIRMED', 'CANCELLED'],
+      CONFIRMED: ['PROCESSING', 'CANCELLED'],
+      PROCESSING: ['DELIVERED', 'CANCELLED'],
+      DELIVERED: [],
+      CANCELLED: [],
+    };
+
+    if (!transitions[currentStatus].includes(newStatus as OrderStatus)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${currentStatus} to ${newStatus}. Forward-only or cancellation permitted.`
+      );
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: { status: newStatus },
     });
   }
 }

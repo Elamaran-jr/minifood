@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext.jsx';
 
 const API_URL = 'http://localhost:3000';
 
@@ -10,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { fetchCartCount } = useCart();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,6 +27,11 @@ export default function Login() {
       const payload = JSON.parse(atob(res.data.access_token.split('.')[1]));
       localStorage.setItem('role', payload.role);
       localStorage.setItem('email', payload.email || email); // Use payload email if present, else form email
+      
+      // Initialize cart count for the session
+      if (payload.role === 'USER') {
+        fetchCartCount();
+      }
       
       // Redirect based on role
       if (payload.role === 'ADMIN') {
