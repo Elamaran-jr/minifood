@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Clock, Truck, Package, XCircle, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, Package, XCircle, ChevronRight, Users } from 'lucide-react';
 
 const API_URL = 'http://localhost:3000';
 
@@ -119,10 +119,10 @@ export default function Orders() {
     }
   };
 
-  if (loading && orders.length === 0) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading orders...</div>;
+  if (loading && orders.length === 0) return <div className="loading-container">Loading orders...</div>;
 
   return (
-    <div className="orders-page">
+    <div className="orders-page fade-in">
       <div className="page-header">
         <h2>{role === 'ADMIN' ? 'Order Management' : 'My Order History'}</h2>
         <p className="subtitle">Track and manage your delicious meals</p>
@@ -143,75 +143,118 @@ export default function Orders() {
                   key={order.id} 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card order-card"
+                  className="order-card"
                 >
-                  <div className="order-card-header">
-                    <div className="order-info-main">
-                      <span className="order-number">Order #{order.id.slice(0, 8)}</span>
-                      <span className="order-date">{new Date(order.createdAt).toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="order-status-actions">
-                      {role === 'ADMIN' ? (
-                        <div className="status-updater">
-                          <label>Update Status:</label>
-                          <select 
-                            value={order.status} 
-                            disabled={updatingId === order.id || order.status === 'DELIVERED' || order.status === 'CANCELLED'}
-                            onChange={(e) => updateStatus(order.id, e.target.value)}
-                            className="status-select"
-                          >
-                            <option value="PLACED" disabled={order.status !== 'PLACED'}>Order Item</option>
-                            <option value="CONFIRMED" disabled={order.status === 'PROCESSING' || order.status === 'DELIVERED' || order.status === 'CANCELLED'}>Confirmed</option>
-                            <option value="PROCESSING" disabled={order.status === 'DELIVERED' || order.status === 'CANCELLED'}>Processing</option>
-                            <option value="DELIVERED" disabled={order.status === 'CANCELLED'}>Delivered</option>
-                            <option value="CANCELLED" disabled={order.status === 'DELIVERED' || order.status === 'CANCELLED'}>Cancelled</option>
-                          </select>
+                  {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                    <div className={`order-card-header ${role === 'ADMIN' ? 'admin-header' : ''}`}>
+                      <div className="order-info-main">
+                        <div className="order-id-chip">
+                          <span className="order-number">#{order.id.slice(0, 8)}</span>
                         </div>
-                      ) : (
-                        <div className={`status-pill ${order.status.toLowerCase()}`}>
-                          {order.status}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <OrderTracker currentStatus={order.status} />
-
-                  <div className="order-card-content">
-                    <div className="order-items-summary">
-                      <h4>Order Items</h4>
-                      <ul className="items-list">
-                        {order.orderItems?.map(item => (
-                          <li key={item.id}>
-                            <ChevronRight size={14} className="bullet" />
-                            <span className="qty">{item.quantity}x</span>
-                            <span className="name">{item.food?.name}</span>
-                            <span className="price">${(item.food?.price * item.quantity).toFixed(2)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="order-summary-side">
-                      {role === 'ADMIN' && order.user && (
-                        <div className="customer-info">
-                          <label>Customer:</label>
-                          <span className="username">{order.user.username || order.user.email}</span>
-                        </div>
-                      )}
-                      
-                      <div className="order-total-box">
-                        <span className="label">Total Paid</span>
-                        <span className="value">${order.total.toFixed(2)}</span>
+                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {role === 'ADMIN' && order.user && (
+                          <div className="admin-customer-pill">
+                            <Users size={14} />
+                            <span>{order.user.username || order.user.email}</span>
+                          </div>
+                        )}
                       </div>
-
-                      {role === 'USER' && order.status === 'PLACED' && (
-                        <button className="btn-cancel" onClick={() => cancelOrder(order.id)}>
-                          Cancel Order
-                        </button>
-                      )}
+                      
+                      <div className="order-status-actions">
+                        {role === 'ADMIN' ? (
+                          <div className="status-updater-compact">
+                            <select 
+                              value={order.status} 
+                              disabled={updatingId === order.id || order.status === 'DELIVERED' || order.status === 'CANCELLED'}
+                              onChange={(e) => updateStatus(order.id, e.target.value)}
+                              className={`status-select-mini ${order.status.toLowerCase()}`}
+                            >
+                              <option value="PLACED">Placed</option>
+                              <option value="CONFIRMED">Confirmed</option>
+                              <option value="PROCESSING">Processing</option>
+                              <option value="DELIVERED">Delivered</option>
+                              <option value="CANCELLED">Cancelled</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <div className={`status-pill-mini ${order.status.toLowerCase()}`}>
+                            {order.status}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  )}
+
+                  {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                    <OrderTracker currentStatus={order.status} />
+                  )}
+
+                  <div className="order-card-body-compact">
+                    {order.status === 'DELIVERED' || order.status === 'CANCELLED' ? (
+                      <div className={`delivered-details-final ${order.status === 'CANCELLED' ? 'cancelled-view' : ''}`}>
+                        <div className="final-detail main-id">
+                          <span className="final-label">Order ID:</span>
+                          <span className="final-value bold-big">#{order.id}</span>
+                        </div>
+                        <div className="final-detail">
+                          <span className="final-label">Order status:</span>
+                          <span className={`final-value ${order.status === 'CANCELLED' ? 'status-red' : 'status-green'}`}>
+                            {order.status === 'CANCELLED' ? 'Cancelled' : 'Delivered'}
+                          </span>
+                        </div>
+                        <div className="final-detail">
+                          <span className="final-label">Payment status:</span>
+                          <span className={`final-value ${order.status === 'CANCELLED' ? 'status-red' : 'status-green'}`}>
+                            {order.status === 'CANCELLED' ? 'Cancelled' : (order.paymentStatus || 'PAID')}
+                          </span>
+                        </div>
+                        <div className="final-detail">
+                          <span className="final-label">Time:</span>
+                          <span className="final-value">{new Date(order.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="final-detail">
+                          <span className="final-label">{order.status === 'CANCELLED' ? 'Cancelled Item:' : 'Ordered Item:'}</span>
+                          <span className="final-value">
+                            {order.orderItems?.map((item, idx) => (
+                              <span key={item.id}>
+                                {item.quantity}x {item.food?.name}
+                                {idx < order.orderItems.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                        <div className="final-detail">
+                          <span className="final-label">Username:</span>
+                          <span className="final-value">{order.user?.username || order.user?.email}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="items-preview-inline">
+                          <Package size={14} className="text-muted" />
+                          <div className="items-scroll">
+                            {order.orderItems?.map((item, idx) => (
+                              <span key={item.id} className="item-token">
+                                {item.quantity}x {item.food?.name}
+                                {idx < order.orderItems.length - 1 ? ',' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="order-card-footer-compact">
+                          <div className="order-price-bold">
+                            ${order.total.toFixed(2)}
+                          </div>
+                          
+                          {role === 'USER' && order.status === 'PLACED' && (
+                            <button className="btn-cancel-mini" onClick={() => cancelOrder(order.id)}>
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}

@@ -31,7 +31,7 @@ export default function Revenue() {
   const periodLabel = { day: "Today", month: "This Month", year: "This Year" };
 
   return (
-    <div>
+    <div className="fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2>Revenue Dashboard</h2>
         <div style={{
@@ -57,7 +57,7 @@ export default function Revenue() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem' }}>Loading...</div>
+        <div className="loading-container">Loading analytics...</div>
       ) : data && (
         <>
           {/* Stats Cards */}

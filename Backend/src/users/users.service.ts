@@ -44,4 +44,22 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async updateRole(id: string, role: any): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+  }
+
+  async remove(id: string): Promise<User> {
+    // Delete dependent records that aren't critical history
+    await this.prisma.cartItem.deleteMany({
+      where: { userId: id }
+    });
+    
+    return this.prisma.user.delete({
+      where: { id },
+    });
+  }
 }

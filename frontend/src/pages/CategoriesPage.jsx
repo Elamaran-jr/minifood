@@ -69,10 +69,10 @@ export default function CategoriesPage() {
     }
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading categories...</div>;
+  if (loading) return <div className="loading-container">Loading categories...</div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.5s ease-out' }}>
+    <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Tag size={28} color="var(--primary)" />

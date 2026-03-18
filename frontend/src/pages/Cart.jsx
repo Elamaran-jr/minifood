@@ -112,112 +112,120 @@ export default function Cart() {
     }
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading cart...</div>;
+  if (loading) return <div className="loading-container">Loading cart...</div>;
 
   return (
-    <div>
+    <div className="cart-page fade-in">
       {showToast && (
-        <div style={{
-          position: 'fixed', top: '80px', right: '2rem', zIndex: 1000,
-          background: 'var(--success)', color: 'white', padding: '1rem 2.5rem',
-          borderRadius: 'var(--radius)', fontWeight: 700, boxShadow: 'var(--shadow-lg)',
-          animation: 'fadeIn 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.75rem'
-        }}>
-          <div style={{ background: 'rgba(255,255,255,0.2)', padding: '5px', borderRadius: '50%', display: 'flex' }}>
+        <div className="toast-success">
+          <div className="toast-icon-wrapper">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
           </div>
-          Order placed and confirmed successfully!
+          <span>Order placed and confirmed successfully!</span>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Your Cart</h2>
+
+      <div className="cart-header-actions">
+        <h2 className="cart-title">Your Cart</h2>
         {cart.length > 0 && (
-          <button className="btn-logout" onClick={clearCart}>
-            <Trash2 size={16} /> Clear Cart
+          <button className="btn-clear-cart" onClick={clearCart}>
+            <Trash2 size={18} /> Clear Cart
           </button>
         )}
       </div>
       
       {cart.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)' }}>Your cart is empty.</p>
-          <button className="btn-primary" style={{ marginTop: '1rem', display: 'inline-flex' }} onClick={() => navigate('/menu')}>
-            Browse Menu
+        <div className="empty-cart-premium">
+          <div className="empty-cart-icon">🛒</div>
+          <p className="empty-cart-text">Your cart is feeling a bit light. Time to add some flavor!</p>
+          <button className="btn-primary" onClick={() => navigate('/menu')}>
+            Explore Our Menu
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-          <div>
-            {cart.map(item => (
-              <div key={item.id} className="card" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.125rem' }}>{item.name}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>${item.price.toFixed(2)} each</p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {/* Quantity controls */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                    overflow: 'hidden'
-                  }}>
-                    <button
-                      onClick={() => changeQty(item.id, item.quantity, -1)}
-                      style={{
-                        background: 'none', border: 'none', padding: '0.4rem 0.6rem',
-                        cursor: 'pointer', color: 'var(--text-main)',
-                        borderRight: '1px solid var(--border)'
-                      }}
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span style={{ padding: '0.4rem 0.8rem', fontWeight: 600, minWidth: '36px', textAlign: 'center' }}>
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => changeQty(item.id, item.quantity, 1)}
-                      style={{
-                        background: 'none', border: 'none', padding: '0.4rem 0.6rem',
-                        cursor: 'pointer', color: 'var(--text-main)',
-                        borderLeft: '1px solid var(--border)'
-                      }}
-                    >
-                      <Plus size={14} />
-                    </button>
+        <div className="cart-container">
+          <div className="cart-items-section">
+            <div className="cart-items-box">
+              {cart.map(item => (
+                <div key={item.id} className="cart-item-row">
+                  <div className="cart-item-image-wrapper">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="cart-item-image" />
+                    ) : (
+                      <div className="cart-item-image-placeholder" style={{ 
+                        width: '100%', height: '100%', background: '#ffedd5', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'var(--primary)', fontWeight: 800, fontSize: '0.7rem'
+                      }}>
+                        No Img
+                      </div>
+                    )}
                   </div>
 
-                  <span style={{ fontWeight: 600, minWidth: '60px', textAlign: 'right' }}>
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </span>
+                  <div className="cart-item-info">
+                    <h3>{item.name}</h3>
+                    <p className="cart-item-price">${item.price.toFixed(2)}</p>
+                  </div>
                   
-                  <button className="nav-btn" style={{ color: 'var(--danger)' }} onClick={() => removeItem(item.id)}>
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="cart-actions">
+                    <div className="quantity-control-premium" style={{ borderSize: '1px' }}>
+                      <button
+                        className="btn-qty-mini"
+                        onClick={() => changeQty(item.id, item.quantity, -1)}
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="qty-display" style={{ minWidth: '24px', fontSize: '0.9rem' }}>{item.quantity}</span>
+                      <button
+                        className="btn-qty-mini"
+                        onClick={() => changeQty(item.id, item.quantity, 1)}
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+
+                    <span className="cart-item-subtotal" style={{ fontSize: '1rem', minWidth: '70px' }}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                    
+                    <button 
+                      className="btn-delete-cart-item" 
+                      onClick={() => removeItem(item.id)}
+                      title="Remove item"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           
-          <div>
-            <div className="card" style={{ position: 'sticky', top: '5rem' }}>
-              <h3 style={{ marginBottom: '1rem' }}>Order Summary</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+          <div className="cart-summary-section">
+            <div className="cart-summary-premium">
+              <h3 className="summary-title">Order Summary</h3>
+              <div className="summary-items">
                 {cart.map(item => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                  <div key={item.id} className="summary-row">
                     <span>{item.name} x{item.quantity}</span>
                     <span>${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
-              <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '1rem 0' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.25rem' }}>
+              <hr className="summary-divider" />
+              <div className="summary-total">
                 <span>Total</span>
                 <span>${total.toFixed(2)}</span>
               </div>
-              <button className="btn-primary" style={{ width: '100%' }} disabled={placingOrder} onClick={placeOrder}>
-                {placingOrder ? 'Processing...' : 'Checkout & Pay'}
+              <button 
+                className="btn-primary" 
+                style={{ width: '100%', fontSize: '1.1rem', padding: '1rem' }} 
+                disabled={placingOrder} 
+                onClick={placeOrder}
+              >
+                {placingOrder ? 'Processing Payment...' : 'Confirm & Place Order'}
               </button>
             </div>
           </div>

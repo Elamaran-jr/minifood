@@ -28,92 +28,126 @@ export default function UsersPage() {
     }
   };
 
+  const handleRoleChange = async (id, newRole) => {
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+    try {
+      await axios.patch(`${API_URL}/users/${id}/role`, { role: newRole }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update role");
+    }
+  };
+
+  const deleteUser = async (id) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    try {
+      await axios.delete(`${API_URL}/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete user. Note: Users with order history cannot be deleted.");
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading users...</div>;
+  if (loading) return <div className="loading-container">Loading users...</div>;
 
   return (
-    <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>User Management</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Manage and view all registered users</p>
-        </div>
-        
-        <div style={{ position: 'relative', width: '300px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+    <div className="users-page fade-in">
+      <div className="page-header">
+        <h2>User Management</h2>
+        <p className="subtitle">Manage and view all registered users in Minifood</p>
+      </div>
+
+      <div className="search-container-premium">
+        <div className="search-wrapper">
+          <Search size={18} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Search users..." 
-            className="form-input"
+            placeholder="Search users by name or email..." 
+            className="search-input-premium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '2.5rem', borderRadius: 'var(--radius-full)' }}
           />
         </div>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="users-table-container">
+        <table className="users-table">
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>USER</th>
-              <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>ROLE</th>
-              <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>JOINED</th>
-              <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>ID</th>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Joined</th>
+              <th>ID</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map(user => (
-              <tr key={user.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
-                <td style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ 
-                      width: '40px', height: '40px', borderRadius: '50%', 
-                      background: 'var(--primary-light)', color: 'var(--primary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: '1.2rem'
-                    }}>
+              <tr key={user.id}>
+                <td>
+                  <div className="user-info-flex">
+                    <div className="user-avatar-pill">
                       {(user.username || user.email)[0].toUpperCase()}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{user.username || 'N/A'}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div className="user-info-text">
+                      <div className="username">{user.username || 'N/A'}</div>
+                      <div className="email">
                         <Mail size={12} /> {user.email}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td style={{ padding: '1rem' }}>
-                  <span style={{ 
-                    padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', 
-                    fontSize: '0.75rem', fontWeight: 800,
-                    background: user.role === 'ADMIN' ? 'var(--primary-light)' : '#f1f5f9',
-                    color: user.role === 'ADMIN' ? 'var(--primary)' : 'var(--text-muted)',
-                    display: 'flex', width: 'fit-content', alignItems: 'center', gap: '0.25rem'
-                  }}>
+                <td>
+                  <span className={`user-role-badge ${user.role.toLowerCase()}`}>
                     <Shield size={12} /> {user.role}
                   </span>
                 </td>
-                <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <td>
+                  <div className="user-date-info">
                     <Calendar size={14} />
                     {new Date(user.createdAt).toLocaleDateString()}
                   </div>
                 </td>
-                <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  #{user.id.slice(0, 8)}
+                <td>
+                  <span className="user-id-monospace">#{user.id.slice(0, 8)}</span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <div className="user-actions-flex">
+                    <select 
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      className={`status-select-mini ${user.role.toLowerCase()}`}
+                      style={{ width: '100px', padding: '4px 8px' }}
+                    >
+                      <option value="USER">User</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                    <button 
+                      onClick={() => deleteUser(user.id)}
+                      className="btn-cancel-mini"
+                      style={{ height: '32px' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        
         {filteredUsers.length === 0 && (
-          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <UsersIcon size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+          <div className="empty-state-container">
+            <UsersIcon size={48} className="empty-icon" />
             <p>No users found matching your search.</p>
           </div>
         )}

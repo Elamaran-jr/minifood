@@ -140,10 +140,10 @@ export default function Menu() {
     }
   };
 
-  if (loading && items.length === 0 && !searchTerm) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading menu...</div>;
+  if (loading && items.length === 0 && !searchTerm) return <div className="loading-container">Loading menu...</div>;
 
   return (
-    <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+    <div className="fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
         <div>
           <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Menu</h2>

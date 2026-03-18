@@ -33,6 +33,7 @@ export class OrdersService {
           userId,
           total,
           status: 'PLACED',
+          paymentStatus: 'PAID',
           orderItems: {
             create: createOrderDto.items.map(item => ({
               foodId: item.foodId,
@@ -43,7 +44,8 @@ export class OrdersService {
         include: {
           orderItems: {
             include: { food: true }
-          }
+          },
+          user: { select: { id: true, email: true, username: true } }
         }
       });
       
@@ -65,7 +67,8 @@ export class OrdersService {
       include: {
         orderItems: {
           include: { food: true }
-        }
+        },
+        user: { select: { id: true, email: true, username: true } }
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
@@ -215,7 +218,7 @@ export class OrdersService {
     const transitions: Record<OrderStatus, OrderStatus[]> = {
       PLACED: ['CONFIRMED', 'CANCELLED'],
       CONFIRMED: ['PROCESSING', 'CANCELLED'],
-      PROCESSING: ['DELIVERED', 'CANCELLED'],
+      PROCESSING: ['DELIVERED'], // Admin cannot cancel once processing
       DELIVERED: [],
       CANCELLED: [],
     };
