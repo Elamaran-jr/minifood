@@ -19,21 +19,21 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
-      
+
       // Save token
       localStorage.setItem('token', res.data.access_token);
-      
+
       // Decode JWT payload to get role and email
       const payload = JSON.parse(atob(res.data.access_token.split('.')[1]));
       localStorage.setItem('role', payload.role);
       localStorage.setItem('username', payload.username || '');
       localStorage.setItem('email', payload.email || email); // Use payload email if present, else form email
-      
+
       // Initialize cart count for the session
       if (payload.role === 'USER') {
         fetchCartCount();
       }
-      
+
       // Redirect based on role
       if (payload.role === 'ADMIN') {
         navigate('/admin');
@@ -55,40 +55,40 @@ export default function Login() {
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Welcome Back</h1>
           <p style={{ color: 'var(--text-muted)' }}>Login to your account to order delicious food.</p>
         </div>
-        
+
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Username or Email</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. maara or user@example.com"
-              required 
+              placeholder="Enter your username or email "
+              required
             />
           </div>
-          
+
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Password</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required 
+              required
               minLength={6}
             />
           </div>
-          
+
           {error && <div style={{ color: 'var(--danger)', fontSize: '0.9rem', padding: '0.5rem', background: '#fef2f2', borderRadius: '6px', textAlign: 'center' }}>{error}</div>}
-          
+
           <button type="submit" className="btn-primary" style={{ width: '100%', padding: '1rem', marginTop: '1rem', fontSize: '1.1rem' }} disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        
+
         <div style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.95rem', color: 'var(--text-muted)' }}>
           Don't have an account?{' '}
           <button onClick={() => navigate('/register')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
