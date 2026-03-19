@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Tag, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);

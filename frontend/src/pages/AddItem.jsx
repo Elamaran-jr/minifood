@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UtensilsCrossed, Edit } from 'lucide-react';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function AddItem() {
   const [formData, setFormData] = useState({

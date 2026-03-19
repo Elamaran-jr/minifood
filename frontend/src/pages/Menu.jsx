@@ -3,8 +3,7 @@ import axios from 'axios';
 import { Plus, Minus, Trash2, ShoppingCart, Edit, Search, Clock, ChevronDown } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function Menu() {
   const [items, setItems] = useState([]);

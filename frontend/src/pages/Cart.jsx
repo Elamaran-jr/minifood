@@ -3,8 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '../context/CartContext.jsx';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function Cart() {
   const [cart, setCart] = useState([]);

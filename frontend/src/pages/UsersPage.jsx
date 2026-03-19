@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users as UsersIcon, Mail, Shield, Calendar, Search } from 'lucide-react';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);

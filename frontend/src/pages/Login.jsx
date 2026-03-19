@@ -2,8 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 export default function Login() {
   const [email, setEmail] = useState('');

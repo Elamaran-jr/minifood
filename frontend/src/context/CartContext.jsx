@@ -1,9 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../services/api';
 
 const CartContext = createContext();
-
-const API_URL = 'http://localhost:3000';
 
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0);

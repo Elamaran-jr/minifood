@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Clock, Truck, Package, XCircle, ChevronRight, Users } from 'lucide-react';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../services/api';
 
 const STATUS_STEPS = [
   { status: 'PLACED', label: 'Order Item', icon: Package },
