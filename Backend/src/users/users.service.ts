@@ -13,6 +13,17 @@ export class UsersService {
     });
   }
 
+  async findOneByEmailOrUsername(identifier: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      },
+    });
+  }
+
   async create(data: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({
       data,

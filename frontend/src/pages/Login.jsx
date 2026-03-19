@@ -26,6 +26,7 @@ export default function Login() {
       // Decode JWT payload to get role and email
       const payload = JSON.parse(atob(res.data.access_token.split('.')[1]));
       localStorage.setItem('role', payload.role);
+      localStorage.setItem('username', payload.username || '');
       localStorage.setItem('email', payload.email || email); // Use payload email if present, else form email
       
       // Initialize cart count for the session
@@ -57,13 +58,13 @@ export default function Login() {
         
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Email Address</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Username or Email</label>
             <input 
-              type="email" 
+              type="text" 
               className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder="e.g. maara or user@example.com"
               required 
             />
           </div>

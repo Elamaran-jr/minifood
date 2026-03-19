@@ -30,6 +30,7 @@ const ProtectedRoute = () => {
 const DashboardLayout = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('role');
+  const username = localStorage.getItem('username');
   const { cartCount, resetCartCount, toastMsg, toastKey } = useCart();
 
 
@@ -52,6 +53,20 @@ const DashboardLayout = () => {
             <UtensilsCrossed size={24} />
             <span>suvai</span>
           </div>
+          {username && (
+            <div style={{
+              fontSize: '1rem',
+              color: '#f59e0b',
+              marginTop: '0.1rem',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              marginLeft: '2.4rem',
+              textTransform: 'capitalize',
+              fontStyle: 'italic'
+            }}>
+              hey {username}!
+            </div>
+          )}
           
 
         </div>
