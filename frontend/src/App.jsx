@@ -6,6 +6,15 @@ import { CartProvider, useCart } from './context/CartContext.jsx'
 import { API_URL } from './services/api';
 
 // Lazy loaded pages
+const Login = lazy(() => import('./pages/Login.jsx'))
+const Register = lazy(() => import('./pages/Register.jsx'))
+const Menu = lazy(() => import('./pages/Menu.jsx'))
+const Cart = lazy(() => import('./pages/Cart.jsx'))
+const Orders = lazy(() => import('./pages/Orders.jsx'))
+const AddItem = lazy(() => import('./pages/AddItem.jsx'))
+const Revenue = lazy(() => import('./pages/Revenue.jsx'))
+const UsersPage = lazy(() => import('./pages/UsersPage.jsx'))
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage.jsx'))
 
 // Protected Route - redirects to /login if no token
 const ProtectedRoute = () => {
