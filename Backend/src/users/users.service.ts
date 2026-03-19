@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt'; // Assuming bcrypt is needed for the register method
-import { RegisterDto } from '../auth/dto/register.dto'; // Assuming RegisterDto exists in auth/dto
+//  isterDto exists in auth/dto
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findOne(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
@@ -57,7 +56,7 @@ export class UsersService {
     await this.prisma.cartItem.deleteMany({
       where: { userId: id }
     });
-    
+
     return this.prisma.user.delete({
       where: { id },
     });

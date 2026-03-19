@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FoodItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createFoodItemDto: CreateFoodItemDto) {
     const { categoryIds, ...rest } = createFoodItemDto;
@@ -21,9 +21,10 @@ export class FoodItemsService {
 
   async findAll(filterDto: GetFoodItemsFilterDto) {
     const { search, category, categoryId, minPrice, maxPrice, page = 1, limit = 10 } = filterDto;
-    
+
     const where: Prisma.FoodItemWhereInput = {
       isDeleted: false
+
     };
 
     if (search) {
@@ -85,10 +86,10 @@ export class FoodItemsService {
       where: { id },
       data: {
         ...rest,
-        ...(categoryIds && { 
-          categories: { 
-            set: categoryIds.map(id => ({ id })) 
-          } 
+        ...(categoryIds && {
+          categories: {
+            set: categoryIds.map(id => ({ id }))
+          }
         })
       },
     });
@@ -106,7 +107,7 @@ export class FoodItemsService {
       // 2. Mark as deleted and unavailable
       return prisma.foodItem.update({
         where: { id },
-        data: { 
+        data: {
           isDeleted: true,
           available: false
         },

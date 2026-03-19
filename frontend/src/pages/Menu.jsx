@@ -11,7 +11,6 @@ export default function Menu() {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState({});  // { itemId: qty }
-  const [addedMsg, setAddedMsg] = useState('');
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -20,7 +19,7 @@ export default function Menu() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { updateCartCount } = useCart();
+  const { updateCartCount, showCartToast } = useCart();
   
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
@@ -119,9 +118,8 @@ export default function Menu() {
         );
       }
       
-      setAddedMsg(`${qty}x ${item.name} added to cart!`);
+      showCartToast(`${qty}x ${item.name} added to cart!`);
       updateCartCount(qty);
-      setTimeout(() => setAddedMsg(''), 2000);
       setQuantities(prev => ({ ...prev, [item.id]: 1 }));
     } catch (err) {
       alert(err.response?.data?.message || 'Error adding to cart');
@@ -225,18 +223,6 @@ export default function Menu() {
         )}
       </div>
 
-      {addedMsg && (
-        <div style={{
-          position: 'fixed', top: '80px', right: '2rem', zIndex: 999,
-          background: 'var(--success)', color: 'white', padding: '1rem 2rem',
-          borderRadius: 'var(--radius)', fontWeight: 700, boxShadow: 'var(--shadow-lg)',
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          animation: 'fadeIn 0.3s ease'
-        }}>
-          <ShoppingCart size={20} /> {addedMsg}
-        </div>
-      )}
-
       {items.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
           <Search size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
@@ -266,6 +252,7 @@ export default function Menu() {
                       src={item.imageUrl} 
                       alt={item.name} 
                       className="food-image"
+                      loading="lazy"
                       onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                     />
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', position: 'absolute', top: '1rem', right: '1rem', zIndex: 1 }}>
@@ -350,7 +337,7 @@ export default function Menu() {
             disabled={page === 1} 
             onClick={() => {
               setPage(p => p - 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo({ top: 0, behavior: 'auto' });
             }}
             style={{ 
               opacity: page === 1 ? 0.3 : 1,
@@ -381,7 +368,7 @@ export default function Menu() {
             disabled={page === meta.totalPages} 
             onClick={() => {
               setPage(p => p + 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo({ top: 0, behavior: 'auto' });
             }}
             style={{ 
               opacity: page === meta.totalPages ? 0.5 : 1,

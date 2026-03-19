@@ -42,18 +42,19 @@
 
 html {
   scrollbar-gutter: stable; /* Pre-allocate space for scrollbar to prevent layout shifts */
+  overscroll-behavior: none;
 }
 
 body {
-  background-color: #faf9f6; /* Soft linen white */
+  background-color: #fcf9f2; /* Warmer linen/cream white */
   color: var(--text-main);
   /* Premium textured feel using subtle gradients and noise-like pattern */
   background-image: 
-    radial-gradient(circle at 2px 2px, rgba(255, 75, 43, 0.02) 1px, transparent 0),
-    linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+    radial-gradient(circle at 2px 2px, rgba(255, 75, 43, 0.03) 1px, transparent 0),
+    linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
   background-size: 32px 32px, 100px 100px, 100px 100px;
-  background-attachment: fixed;
+  overscroll-behavior: none;
 }
 
 /* Animations */
@@ -136,6 +137,8 @@ body {
 
 .nav-link:hover, .nav-link.active {
   color: var(--primary);
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
 }
 
 .nav-link::after {
@@ -353,7 +356,7 @@ body {
   text-align: left;
 }
 
-.nav-btn:hover {
+.nav-btn:hover, .nav-btn.active {
   background: var(--primary-light);
   color: var(--primary);
 }
@@ -498,11 +501,11 @@ body {
 }
 
 .food-card {
-  background-color: var(--card-bg);
+  background-color: #fffcf8; /* Light warm cream background */
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 4px 15px rgba(255, 75, 43, 0.04);
+  border: 1px solid rgba(255, 75, 43, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;

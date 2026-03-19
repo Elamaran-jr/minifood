@@ -10,10 +10,9 @@ export default function Cart() {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
-  const [showToast, setShowToast] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const { fetchCartCount, resetCartCount } = useCart();
+  const { fetchCartCount, resetCartCount, showCartToast } = useCart();
 
   const fetchCart = async () => {
     try {
@@ -99,12 +98,10 @@ export default function Cart() {
       
       setCart([]);
       resetCartCount();
-      setShowToast(true);
       
-      setTimeout(() => {
-        setShowToast(false);
-        navigate('/orders');
-      }, 3000);
+      // Use centralized toast and navigate immediately 
+      showCartToast('Order placed and confirmed successfully!');
+      navigate('/orders');
     } catch (err) {
       alert(err.response?.data?.message || 'Error placing order');
     } finally {
@@ -116,17 +113,6 @@ export default function Cart() {
 
   return (
     <div className="cart-page fade-in">
-      {showToast && (
-        <div className="toast-success">
-          <div className="toast-icon-wrapper">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <span>Order placed and confirmed successfully!</span>
-        </div>
-      )}
-
       <div className="cart-header-actions">
         <h2 className="cart-title">Your Cart</h2>
         {cart.length > 0 && (
@@ -152,7 +138,7 @@ export default function Cart() {
                 <div key={item.id} className="cart-item-row">
                   <div className="cart-item-image-wrapper">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="cart-item-image" />
+                      <img src={item.imageUrl} alt={item.name} className="cart-item-image" loading="lazy" />
                     ) : (
                       <div className="cart-item-image-placeholder" style={{ 
                         width: '100%', height: '100%', background: '#ffedd5', 

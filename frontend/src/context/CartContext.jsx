@@ -7,6 +7,8 @@ const API_URL = 'http://localhost:3000';
 
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastKey, setToastKey] = useState(0);
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
@@ -42,8 +44,18 @@ export const CartProvider = ({ children }) => {
     setCartCount(0);
   };
 
+  const showCartToast = (msg) => {
+    setToastMsg(msg);
+    setToastKey(Date.now());
+    // Auto-clear after 3 seconds
+    setTimeout(() => setToastMsg(''), 3010);
+  };
+
   return (
-    <CartContext.Provider value={{ cartCount, updateCartCount, fetchCartCount, resetCartCount }}>
+    <CartContext.Provider value={{ 
+      cartCount, updateCartCount, fetchCartCount, resetCartCount, 
+      toastMsg, toastKey, showCartToast 
+    }}>
       {children}
     </CartContext.Provider>
   );
