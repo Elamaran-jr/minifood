@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, Outlet, useLocation } from 'react
 import { ShoppingCart, UtensilsCrossed, LogOut, ListOrdered, PlusCircle, BarChart3, Users, Tag, Loader2 } from 'lucide-react'
 import axios from 'axios'
 import { CartProvider, useCart } from './context/CartContext.jsx'
+import { SocketProvider, useSocket } from './context/SocketContext.jsx'
 import { API_URL } from './services/api';
 
 // Lazy loaded pages
@@ -35,6 +36,48 @@ const DashboardLayout = () => {
 
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
+
+  // Admin New Orders Badge Logic
+  const socket = useSocket();
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [userNavNotification, setUserNavNotification] = useState(false);
+
+  useEffect(() => {
+    if (role === 'ADMIN' && socket) {
+      const handleNewOrder = () => {
+        if (!isActive('/orders')) {
+          setNewOrdersCount(prev => prev + 1);
+        }
+      };
+      socket.on('orderCreated', handleNewOrder);
+      return () => socket.off('orderCreated', handleNewOrder);
+    }
+
+    if (role === 'USER' && socket) {
+      let myUserId = null;
+      try {
+        const tokenStr = localStorage.getItem('token');
+        if (tokenStr) {
+          myUserId = JSON.parse(atob(tokenStr.split('.')[1])).sub;
+        }
+      } catch(e) {}
+
+      const handleUserOrderUpdate = (updatedOrder) => {
+        if (myUserId && updatedOrder.userId === myUserId && !isActive('/orders')) {
+          setUserNavNotification(true);
+        }
+      };
+      socket.on('orderStatusUpdated', handleUserOrderUpdate);
+      return () => socket.off('orderStatusUpdated', handleUserOrderUpdate);
+    }
+  }, [socket, role, location.pathname]);
+
+  useEffect(() => {
+    if (isActive('/orders')) {
+      if (role === 'ADMIN') setNewOrdersCount(0);
+      if (role === 'USER') setUserNavNotification(false);
+    }
+  }, [location.pathname, role]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -72,8 +115,42 @@ const DashboardLayout = () => {
 
         <div className="nav-links">
           <button className={`nav-btn ${isActive('/menu') ? 'active' : ''}`} onClick={() => navigate('/menu')}>Menu</button>
-          <button className={`nav-btn flex ${isActive('/orders') ? 'active' : ''}`} onClick={() => navigate('/orders')}>
+          <button className={`nav-btn flex ${isActive('/orders') ? 'active' : ''}`} onClick={() => navigate('/orders')} style={{ position: 'relative' }}>
             <ListOrdered size={18} /> Orders
+            {role === 'ADMIN' && newOrdersCount > 0 && (
+              <span className="order-badge pulse-animation" style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '-5px',
+                background: '#ef4444',
+                color: 'white',
+                borderRadius: '50%',
+                width: '18px',
+                height: '18px',
+                fontSize: '0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                border: '2px solid white'
+              }}>
+                {newOrdersCount}
+              </span>
+            )}
+            {role === 'USER' && userNavNotification && (
+              <span className="user-notify-dot pulse-animation" style={{
+                position: 'absolute',
+                top: '0px',
+                right: '4px',
+                background: '#ef4444',
+                borderRadius: '50%',
+                width: '10px',
+                height: '10px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                border: '2px solid white'
+              }}></span>
+            )}
           </button>
           
           {role === 'USER' && (
@@ -178,8 +255,9 @@ const LoadingSpinner = () => (
 function App() {
   return (
     <CartProvider>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
+      <SocketProvider>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
           {/* Public routes - NO navbar, NO layout */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
@@ -199,8 +277,9 @@ function App() {
               <Route path="/admin" element={<Navigate to="/revenue" replace />} />
             </Route>
           </Route>
-        </Routes>
-      </Suspense>
+          </Routes>
+        </Suspense>
+      </SocketProvider>
     </CartProvider>
   )
 }

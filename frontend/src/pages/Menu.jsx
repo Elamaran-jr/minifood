@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Plus, Minus, Trash2, ShoppingCart, Edit, Search, Clock, ChevronDown } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
+import { useSocket } from '../context/SocketContext.jsx';
 import { API_URL } from '../services/api';
 
 export default function Menu() {
@@ -19,6 +20,7 @@ export default function Menu() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { updateCartCount, showCartToast } = useCart();
+  const socket = useSocket();
   
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
@@ -98,6 +100,20 @@ export default function Menu() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMenuUpdated = () => {
+      fetchItems(page, searchTerm, selectedCategory);
+    };
+
+    socket.on('menuUpdated', handleMenuUpdated);
+
+    return () => {
+      socket.off('menuUpdated', handleMenuUpdated);
+    };
+  }, [socket, page, searchTerm, selectedCategory]);
 
   const updateQty = (itemId, delta) => {
     setQuantities(prev => {

@@ -2,10 +2,14 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   async create(userId: string, createOrderDto: CreateOrderDto) {
     let total = 0;
@@ -33,7 +37,7 @@ export class OrdersService {
           userId,
           total,
           status: 'PLACED',
-          paymentStatus: 'PAID',
+          paymentStatus: 'UNPAID',
           orderItems: {
             create: createOrderDto.items.map(item => ({
               foodId: item.foodId,
@@ -53,6 +57,9 @@ export class OrdersService {
       await prisma.cartItem.deleteMany({
         where: { userId }
       });
+
+      // Emit real-time event
+      this.eventsGateway.emitNewOrder(order);
 
       return order;
     });
@@ -204,15 +211,23 @@ export class OrdersService {
       throw new BadRequestException('Orders can only be cancelled while in PLACED status. Once confirmed, contact support.');
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: { status: 'CANCELLED' },
     });
+
+    this.eventsGateway.emitOrderStatusUpdate(updatedOrder);
+
+    return updatedOrder;
   }
 
   async updateStatus(id: string, newStatus: 'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'DELIVERED' | 'CANCELLED') {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException(`Order with ID ${id} not found`);
+
+    if (newStatus === 'PROCESSING' && order.paymentStatus !== 'PAID') {
+      throw new BadRequestException('Cannot move order to processing because payment is still pending.');
+    }
 
     const currentStatus = order.status as OrderStatus;
     const transitions: Record<OrderStatus, OrderStatus[]> = {
@@ -229,9 +244,39 @@ export class OrdersService {
       );
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: { status: newStatus },
     });
+
+    this.eventsGateway.emitOrderStatusUpdate(updatedOrder);
+
+    return updatedOrder;
+  }
+
+  async payOrder(id: string, userId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+    if (order.userId !== userId) {
+      throw new ForbiddenException('You can only pay for your own orders');
+    }
+    if (order.status !== 'CONFIRMED') {
+      throw new BadRequestException('Order must be confirmed by the admin before payment.');
+    }
+    if (order.paymentStatus === 'PAID') {
+      throw new BadRequestException('Order is already paid.');
+    } // dummy payment implementation, in real world we would integrate with Stripe/Razorpay
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id },
+      data: { paymentStatus: 'PAID' },
+    });
+
+    this.eventsGateway.emitOrderStatusUpdate(updatedOrder);
+
+    return updatedOrder;
   }
 }

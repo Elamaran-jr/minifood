@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Patch, HttpCode, HttpStatus } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -48,6 +48,13 @@ export class OrdersController {
   @Roles(Role.USER) // User cancels their own order
   cancelOrder(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordersService.cancelOrder(id, user.userId);
+  }
+
+  @Patch(':id/pay')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.USER) // User pays for their own order
+  payOrder(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.payOrder(id, user.userId);
   }
 
   @Patch(':id/status')

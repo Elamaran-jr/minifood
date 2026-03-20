@@ -4,19 +4,25 @@ import { CreateFoodItemDto } from './dto/create-food-item.dto';
 import { UpdateFoodItemDto } from './dto/update-food-item.dto';
 import { GetFoodItemsFilterDto } from './dto/get-food-items-filter.dto';
 import { Prisma } from '@prisma/client';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class FoodItemsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) { }
 
   async create(createFoodItemDto: CreateFoodItemDto) {
     const { categoryIds, ...rest } = createFoodItemDto;
-    return this.prisma.foodItem.create({
+    const item = await this.prisma.foodItem.create({
       data: {
         ...rest,
         categories: { connect: categoryIds.map(id => ({ id })) }
       },
     });
+    this.eventsGateway.emitMenuUpdate();
+    return item;
   }
 
   async findAll(filterDto: GetFoodItemsFilterDto) {
@@ -82,7 +88,7 @@ export class FoodItemsService {
   async update(id: string, updateFoodItemDto: UpdateFoodItemDto) {
     await this.findOne(id); // Ensure exists
     const { categoryIds, ...rest } = updateFoodItemDto;
-    return this.prisma.foodItem.update({
+    const updated = await this.prisma.foodItem.update({
       where: { id },
       data: {
         ...rest,
@@ -93,12 +99,14 @@ export class FoodItemsService {
         })
       },
     });
+    this.eventsGateway.emitMenuUpdate();
+    return updated;
   }
 
   async remove(id: string) {
     const item = await this.findOne(id); // Ensure exists and not deleted
 
-    return this.prisma.$transaction(async (prisma) => {
+    const result = await this.prisma.$transaction(async (prisma) => {
       // 1. Clear active carts containing this item
       await prisma.cartItem.deleteMany({
         where: { foodId: id },
@@ -113,5 +121,8 @@ export class FoodItemsService {
         },
       });
     });
+
+    this.eventsGateway.emitMenuUpdate();
+    return result;
   }
 }

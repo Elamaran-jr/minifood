@@ -210,7 +210,7 @@ export default function Cart() {
                 disabled={placingOrder} 
                 onClick={placeOrder}
               >
-                {placingOrder ? 'Processing Payment...' : 'Confirm & Place Order'}
+                {placingOrder ? 'Placing Order...' : 'Confirm & Place Order'}
               </button>
             </div>
           </div>

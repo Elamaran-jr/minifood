@@ -3,6 +3,8 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Clock, Truck, Package, XCircle, ChevronRight, Users } from 'lucide-react';
 import { API_URL } from '../services/api';
+import { useSocket } from '../context/SocketContext.jsx';
+import { useCart } from '../context/CartContext.jsx';
 
 const STATUS_STEPS = [
   { status: 'PLACED', label: 'Order Item', icon: Package },
@@ -67,6 +69,8 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [updatingId, setUpdatingId] = useState(null);
+  const socket = useSocket();
+  const { showCartToast } = useCart();
   
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
@@ -92,6 +96,28 @@ export default function Orders() {
     fetchOrders(page);
   }, [page]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOrderStatusUpdated = (updatedOrder) => {
+      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o));
+    };
+
+    const handleOrderCreated = (newOrder) => {
+      if (role === 'ADMIN') {
+        fetchOrders(1);
+      }
+    };
+
+    socket.on('orderStatusUpdated', handleOrderStatusUpdated);
+    socket.on('orderCreated', handleOrderCreated);
+
+    return () => {
+      socket.off('orderStatusUpdated', handleOrderStatusUpdated);
+      socket.off('orderCreated', handleOrderCreated);
+    };
+  }, [socket, role]);
+
   const updateStatus = async (orderId, newStatus) => {
     setUpdatingId(orderId);
     try {
@@ -115,6 +141,21 @@ export default function Orders() {
       fetchOrders(page);
     } catch (err) {
       alert(err.response?.data?.message || 'Error cancelling order');
+    }
+  };
+
+  const payOrder = async (orderId) => {
+    setUpdatingId(orderId);
+    try {
+      await axios.patch(`${API_URL}/orders/${orderId}/pay`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showCartToast('Payment successful!');
+      // WebSocket event will update UI natively
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error processing payment');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -170,8 +211,10 @@ export default function Orders() {
                             >
                               <option value="PLACED">Placed</option>
                               <option value="CONFIRMED">Confirmed</option>
-                              <option value="PROCESSING">Processing</option>
-                              <option value="DELIVERED">Delivered</option>
+                              <option value="PROCESSING" disabled={order.paymentStatus !== 'PAID'}>
+                                Processing {order.paymentStatus !== 'PAID' ? '(Awaiting Payment)' : ''}
+                              </option>
+                              <option value="DELIVERED" disabled={order.paymentStatus !== 'PAID'}>Delivered</option>
                               <option value="CANCELLED">Cancelled</option>
                             </select>
                           </div>
@@ -193,7 +236,7 @@ export default function Orders() {
                       <div className={`delivered-details-final ${order.status === 'CANCELLED' ? 'cancelled-view' : ''}`}>
                         <div className="final-detail main-id">
                           <span className="final-label">Order ID:</span>
-                          <span className="final-value bold-big">#{order.id}</span>
+                          <span className="final-value bold-big">#{order.id.slice(0, 8)}</span>
                         </div>
                         <div className="final-detail">
                           <span className="final-label">Order status:</span>
@@ -241,14 +284,39 @@ export default function Orders() {
                           </div>
                         </div>
 
-                        <div className="order-card-footer-compact">
-                          <div className="order-price-bold">
-                            ${order.total.toFixed(2)}
+                        <div className="order-card-footer-compact" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="order-price-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              ${order.total.toFixed(2)}
+                              <span style={{ 
+                                fontSize: '0.65rem', 
+                                padding: '2px 6px', 
+                                borderRadius: '8px',
+                                background: order.paymentStatus === 'PAID' ? '#dcfce7' : '#fee2e2',
+                                color: order.paymentStatus === 'PAID' ? '#166534' : '#991b1b',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {order.paymentStatus}
+                              </span>
+                            </div>
+                            
+                            {role === 'USER' && order.status === 'PLACED' && (
+                              <button className="btn-cancel-mini" onClick={() => cancelOrder(order.id)}>
+                                Cancel
+                              </button>
+                            )}
                           </div>
                           
-                          {role === 'USER' && order.status === 'PLACED' && (
-                            <button className="btn-cancel-mini" onClick={() => cancelOrder(order.id)}>
-                              Cancel
+                          {role === 'USER' && order.status === 'CONFIRMED' && order.paymentStatus === 'UNPAID' && (
+                            <button 
+                              className="btn-primary pulse-animation" 
+                              style={{ width: '100%', marginTop: '1rem', padding: '0.75rem', fontSize: '1rem', background: '#10b981', display: 'flex', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)' }}
+                              onClick={() => payOrder(order.id)}
+                              disabled={updatingId === order.id}
+                            >
+                              {updatingId === order.id ? 'Processing Payment...' : 'Pay Now'}
                             </button>
                           )}
                         </div>
